@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>test</title>
+	<link rel="stylesheet" href="/style/style.css">
+</head>
+
+<body>
+	<header>
+		<h1 class="header">Скачать архивом файлы</h1>
+	</header>
+	<main>
+		<article>
+			<section class="form">
+				<div class="form__description description">
+					<h2>Ссылки</h2>
+					<p>Добавьте необходмые ссылки. <br> Можно добавить несколько ссылок за раз, предворительно разделёнными
+						запятыми</p>
+				</div>
+				<div class="form__url url">
+					<textarea class="url__enter"></textarea>
+					<button class="url__add">Добавить </button>
+					<button class="url__send">Архивировать</button>
+					<button class="url__download">Скачать</button>
+				</div>
+				<div class="form__list-url list-url">
+					<ol class="list">
+					</ol>
+					<button class="list-url__delite">Удалить</button>
+				</div>
+			</section>
+		</article>
+	</main>
+	<footer>
+	</footer>
+	<script>
+		let manage = {
+			listUrl: [],
+			butAdd: document.querySelector('.url__add'),
+			butSend: document.querySelector('.url__send'),
+			butDel: document.querySelector('.list-url__delite'),
+			textA: document.querySelector('.url__enter'),
+			textL: document.querySelector('.list'),
+			addStr: function (string) {
+				let li = document.createElement('li'); // элемент
+				let inp = document.createElement('input'); // отметка для удаления
+				let p = document.createElement('p');
+				// chechbox
+				inp.type = "checkbox";
+				inp.dataset.num = this.listUrl.length; // номер элемента
+				li.appendChild(inp); // добавляем checkbox
+				// добавляем инфу о url
+				p.textContent = " " + string;
+				li.appendChild(p);
+				// добавляем элемент в список
+				li.className = "list-el-" + this.listUrl.length;
+				this.listUrl.push(string); // добавляем в список url-ов
+				this.textL.appendChild(li); // показываем введённый url
+				this.textA.value = "";
+			},
+			remUrl: function (num) {
+				this.textL.removeChild(document.querySelector(".list-el-" + num));
+				this.listUrl.splice(num, 1);
+			},
+			addUrl: function (str) {
+				str = str.replace(/\s/g, "",);
+				let arrUrl = str.split(',');
+				arrUrl.forEach(element => {
+					if (this.listUrl.indexOf(element) == -1 && /[^/\/:]+:(\/\/|\\\\).+?/.test(element)) this.addStr(element);
+				});
+			},
+			send: function () {
+				let request = new XMLHttpRequest();
+				request.open("POST", "./component/route.php");
+				request.setRequestHeader('Content-Type', "application/json; charset=utf-8");
+				request.send(JSON.stringify({ conf: {}, url: this.listUrl }));
+				request.addEventListener("readystatechange", () => {
+					if (request.status == 200 && request.readyState == 4) {
+						document.querySelector('.url__download').addEventListener("click", () => {
+							let a = document.createElement('a');
+							a.href = JSON.parse(request.responseText).url;
+							a.download = true;
+							a.click();
+						});
+					}
+				});
+			}
+		}
+		// Ивенты на кнопку url__add
+		manage.butAdd.addEventListener('click', () => {
+			manage.addUrl(manage.textA.value);
+		});
+		manage.textA.addEventListener("keydown", (e) => {
+			if (e.key == "Enter") {
+				e.preventDefault();
+				manage.addUrl(manage.textA.value);
+			}
+		});
+		// Ивенты на кнопку url__send
+		manage.butSend.addEventListener('click', () => {
+			manage.send();
+		});
+		// Ивенты на кнопку list-url__delite
+		manage.butDel.addEventListener('click', () => {
+			manage.textL.querySelectorAll("input").forEach((el) => {
+				if (el.checked) {
+					manage.remUrl(el.dataset.num);
+				}
+			});
+		});
+	</script>
+</body>
+
+</html>
