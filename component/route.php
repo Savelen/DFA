@@ -29,19 +29,22 @@ function responseApache($file)
 }
 
 // Начало -------------------
-require_once "../model/download_file.php";
+require_once "../model/archive.php";
 
-use DFA\Files as Files;
+use DFA\Archive as Archive;
 
 try {
 	// получаем json
 	$data = json_decode(file_get_contents('php://input'), true);
-	if (empty($data['url'])) throw new Exception("Not Found Link", 101);
+	// проверяем наличие ссылок или запросса скачать файл (приоритет)
+	if (empty($data['url']) && !isset($data['donwload'])) throw new Exception("Not Found Link", 101);
+	else if (isset($data['donwload']) ? ($data['download'] == true) : false) {
+		echo json_encode(["url" => Archive::getArchivePath($data["id"])]);
+	}
 	else {
-		$files = new Files($data["url"], ["maxSize" => 2147483648]);
-		$files->downloadFile();
-		echo json_encode(["url" => $files->getFilePath()[0]]);
-		// $files->getp();
+		$archive = new Archive($data["url"], ["name"=>(isset($data["name"]))?$data["name"]: false]);
+		$archive->downloadFile();
+		$archive->archive();
 	}
 } catch (Exception $e) {
 	echo json_encode(["error" => true, "code" => $e->getCode(), "message" => $e->getMessage()]);

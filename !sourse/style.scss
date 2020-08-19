@@ -1,5 +1,14 @@
 @import "_zeroing";
 
+%buttom {
+	font-size: 1.5em;
+	height: 1.5em;
+	min-width: calc(150px + 5%);
+	transition: linear 0.1s;
+	border: 3px solid black;
+	margin-left: 5px;
+}
+
 body {
 	font-size: 18px;
 }
@@ -17,7 +26,7 @@ main {
 		display: flex;
 		justify-content: center;
 		.form {
-			width: 60%;
+			width: 95%;
 			.description {
 				margin-top: 20px;
 				h2 {
@@ -29,23 +38,28 @@ main {
 					font-weight: 400;
 				}
 			}
+			&__enter {
+				border: 2px solid #333;
+				border-radius: 5px;
+				height: 25vh;
+				width: 95vw;
+				margin: 20px 15px 20px 0px;
+				resize: none;
+			}
 			.url {
 				display: flex;
 				justify-content: space-between;
 				align-items: center;
-				&__enter {
-					border: 2px solid #333;
-					border-radius: 5px;
-					height: 30vh;
-					width: 50vh;
-					margin: 20px 15px 20px 0px;
-					resize: none;
+				margin-bottom: 20px;
+				&__add {
+					@extend %buttom;
 				}
-				button {
-					font-size: 1.5em;
-					height: 1.5em;
-					min-width: 17%;
-					transition: linear 0.1s;
+				&__download {
+					@extend %buttom;
+				}
+				&__send {
+					@extend %buttom;
+					min-width: 200px;
 				}
 				button:active {
 					box-shadow: 0px 0px 2px 3px black;
@@ -55,14 +69,15 @@ main {
 				.list {
 					border: 2px solid #333;
 					border-radius: 10px;
-					min-height: 30vh;
+					height: 30vh;
+					overflow: auto;
 					li {
 						overflow-wrap: break-word;
 						margin: 10px 0 0 20px;
 						font-size: 1em;
 					}
 				}
-				&__delite{
+				&__delite {
 					font-size: 1.2em;
 					height: 1.5em;
 					width: 17vh;

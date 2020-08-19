@@ -20,8 +20,8 @@
 					<p>Добавьте необходмые ссылки. <br> Можно добавить несколько ссылок за раз, предворительно разделёнными
 						запятыми</p>
 				</div>
+				<textarea class="form__enter"></textarea>
 				<div class="form__url url">
-					<textarea class="url__enter"></textarea>
 					<button class="url__add">Добавить </button>
 					<button class="url__send">Архивировать</button>
 					<button class="url__download">Скачать</button>
@@ -42,7 +42,7 @@
 			butAdd: document.querySelector('.url__add'),
 			butSend: document.querySelector('.url__send'),
 			butDel: document.querySelector('.list-url__delite'),
-			textA: document.querySelector('.url__enter'),
+			textA: document.querySelector('.form__enter'),
 			textL: document.querySelector('.list'),
 			addStr: function (string) {
 				let li = document.createElement('li'); // элемент
@@ -77,6 +77,12 @@
 				request.open("POST", "./component/route.php");
 				request.setRequestHeader('Content-Type', "application/json; charset=utf-8");
 				request.send(JSON.stringify({ conf: {}, url: this.listUrl }));
+			},
+			download: function () {
+				let request = new XMLHttpRequest();
+				request.open("POST", "./component/route.php");
+				request.setRequestHeader('Content-Type', "application/json; charset=utf-8");
+				request.send(JSON.stringify({ download: true }));
 				request.addEventListener("readystatechange", () => {
 					if (request.status == 200 && request.readyState == 4) {
 						document.querySelector('.url__download').addEventListener("click", () => {

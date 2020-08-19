@@ -6,14 +6,9 @@ use Exception;
 
 interface downloadFile
 {
-	public function __construct(array $urlArr);
+	public function __construct(array $urlArr, $conf);
 	public function downloadFile();
 	public function addFile(string $url);
-}
-interface archiveFile extends downloadFile
-{
-	public function archive($name);
-	public function updArc();
 }
 
 class Files implements downloadFile
@@ -23,7 +18,6 @@ class Files implements downloadFile
 	protected $nameDir = "";  // имя папки в которой хранятся файлы
 	protected $root = "../TempFiles/"; // корневая папка хранения временных файлов пользователей
 	private $reject = [];
-	private $ready = [];
 	private $maxSize = 104857600; // максимальный общий размер файлов
 	private $sizef = 0;
 	public function __construct($urlArr, $conf = ["maxSize" => 104857600, "root" => "../TempFiles/"])
@@ -54,14 +48,18 @@ class Files implements downloadFile
 				try {
 					if ($data["status"] == 200) {
 						curl_setopt($curl, CURLOPT_URL, $url); // следующий файл
+						// проверка вмещается ли файл в лимит памяти
 						$this->sizef += $data['size'];
 						if ($this->sizef <= $this->maxSize) {
 							$file = curl_exec($curl);
+							// сохраняем файл
 							if (file_put_contents($this->root . $this->nameDir . "/" . $data["name"], $file) === false) throw new Exception("Сбой записи на диск", 202);
+							// добавляем в список скаченых файлов
 							array_push($this->files, array_merge(["url" => $url], $data));
 						} else throw new Exception("Не хватает места", 301);
 					} else throw new Exception("Ошибка скачивания", 201);
 				} catch (Exception $e) {
+					// добавляем в список проблеммых url
 					array_push($this->reject, array_merge(["url" => $url, "error" => ["code" => $e->getCode(), "message" => $e->getMessage()]], $data));
 				}
 			}
@@ -81,7 +79,10 @@ class Files implements downloadFile
 		}
 		return $result;
 	}
-
+	protected function removeAllFiles()
+	{
+		foreach ($this->getFilePath() as $value) unlink($value);
+	}
 	protected function dataFile($url)
 	{
 		$status = false;
@@ -130,6 +131,6 @@ class Files implements downloadFile
 	// показывает использованные url
 	public function ready()
 	{
-		return $this->ready;
+		return $this->files;
 	}
 }

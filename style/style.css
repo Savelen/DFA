@@ -70,6 +70,17 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 400;
 }
 
+main article .form .url__add, main article .form .url__download, main article .form .url__send {
+  font-size: 1.5em;
+  height: 1.5em;
+  min-width: calc(150px + 5%);
+  -webkit-transition: linear 0.1s;
+  -o-transition: linear 0.1s;
+  transition: linear 0.1s;
+  border: 3px solid black;
+  margin-left: 5px;
+}
+
 body {
   font-size: 18px;
 }
@@ -98,7 +109,7 @@ main article {
 }
 
 main article .form {
-  width: 60%;
+  width: 95%;
 }
 
 main article .form .description {
@@ -115,6 +126,15 @@ main article .form .description p {
   font-weight: 400;
 }
 
+main article .form__enter {
+  border: 2px solid #333;
+  border-radius: 5px;
+  height: 25vh;
+  width: 95vw;
+  margin: 20px 15px 20px 0px;
+  resize: none;
+}
+
 main article .form .url {
   display: -webkit-box;
   display: -ms-flexbox;
@@ -125,24 +145,11 @@ main article .form .url {
   -webkit-box-align: center;
       -ms-flex-align: center;
           align-items: center;
+  margin-bottom: 20px;
 }
 
-main article .form .url__enter {
-  border: 2px solid #333;
-  border-radius: 5px;
-  height: 30vh;
-  width: 50vh;
-  margin: 20px 15px 20px 0px;
-  resize: none;
-}
-
-main article .form .url button {
-  font-size: 1.5em;
-  height: 1.5em;
-  min-width: 17%;
-  -webkit-transition: linear 0.1s;
-  -o-transition: linear 0.1s;
-  transition: linear 0.1s;
+main article .form .url__send {
+  min-width: 200px;
 }
 
 main article .form .url button:active {
@@ -153,7 +160,8 @@ main article .form .url button:active {
 main article .form .list-url .list {
   border: 2px solid #333;
   border-radius: 10px;
-  min-height: 30vh;
+  height: 30vh;
+  overflow: auto;
 }
 
 main article .form .list-url .list li {
