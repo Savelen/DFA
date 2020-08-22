@@ -10,8 +10,6 @@ require_once "download_file.php";
 interface archiveFile extends downloadFile
 {
 	public function archive();
-	public function updArc();
-	static public function getArchivePath($id);
 }
 
 class Archive extends Files implements archiveFile
@@ -19,14 +17,16 @@ class Archive extends Files implements archiveFile
 	private $nameArh = ""; // имя архива
 	private $archive;
 	private $encryption;
+	private $compress;
 
-	public function __construct($urlArr, $conf = ["maxSize" => 104857600, "root" => "../TempFiles/", "name" => false, "encryption" => 0])
+	public function __construct($urlArr, $conf = ["name" => null, "encryption" => 0, "compress" => 0])
 	{
-		if ($conf["name"] == false) $this->nameArh = substr(md5(rand()), 0, 10);
+		if (!isset($conf["name"])) $this->nameArh = substr(md5(rand()), 0, 10);
 		else	$this->nameArh = $conf["name"];
 		parent::__construct($urlArr, $conf);
 		$this->archive = new ZipArchive();
-		if ($this->archive->open($this->root . $this->nameDir . '/' . $this->nameArh . ".zip", ZipArchive::CREATE) !== true) throw new Exception("Can't open Path");
+		// создание архива
+		if ($this->archive->open($this->getArchivePath(), ZipArchive::CREATE) !== true) throw new Exception("Can't open Path");
 		// Шифрование
 		switch ($conf["encryption"]) {
 			case 0: {
@@ -48,21 +48,46 @@ class Archive extends Files implements archiveFile
 			default:
 				break;
 		}
+		// сжатие
+		switch ($conf['compress']) {
+			case 0: {
+					$this->compress = ZipArchive::CM_STORE;
+					break;
+				}
+			case 1: {
+					$this->compress = ZipArchive::CM_REDUCE_1;
+					break;
+				}
+			case 2: {
+					$this->compress = ZipArchive::CM_REDUCE_2;
+					break;
+				}
+			case 3: {
+					$this->compress = ZipArchive::CM_REDUCE_3;
+					break;
+				}
+			case 4: {
+					$this->compress = ZipArchive::CM_REDUCE_4;
+					break;
+				}
+
+			default:
+				break;
+		}
 	}
 	public function archive()
 	{
 		foreach ($this->getFilePath() as $value) {
 			$this->archive->addFile($value, basename($value));
-			$this->archive->setCompressionName($value, ZipArchive::CM_STORE);
-			$this->archive->setEncryptionName($value, $this->encryption);
+			$this->archive->setCompressionName($value, $this->compress);  // сжатие
+			$this->archive->setEncryptionName($value, $this->encryption); // Шифрование
 		}
 		$this->archive->close();
-		$this->removeAllFiles();
+
+		return $this->getArchivePath();
 	}
-	public function updArc()
+	public function getArchivePath()
 	{
-	}
-	static public function getArchivePath($id)
-	{
+		return $this->root . $this->nameDir . '/' . $this->nameArh . ".zip";
 	}
 }

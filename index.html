@@ -16,11 +16,10 @@
 		<article>
 			<section class="form">
 				<div class="form__description description">
-					<h2>Ссылки</h2>
-					<p>Добавьте необходмые ссылки. <br> Можно добавить несколько ссылок за раз, предворительно разделёнными
-						запятыми</p>
 				</div>
-				<textarea class="form__enter"></textarea>
+				<textarea class="form__enter"
+					placeholder="Добавьте необходмые ссылки. Пример: https://example1.com,https://example2.com"></textarea>
+				<input type="text" placeholder="Имя архива" class="form__nameArch">
 				<div class="form__url url">
 					<button class="url__add">Добавить </button>
 					<button class="url__send">Архивировать</button>
@@ -42,6 +41,7 @@
 			butAdd: document.querySelector('.url__add'),
 			butSend: document.querySelector('.url__send'),
 			butDel: document.querySelector('.list-url__delite'),
+			nameArch: document.querySelector('.form__nameArch'),
 			textA: document.querySelector('.form__enter'),
 			textL: document.querySelector('.list'),
 			addStr: function (string) {
@@ -76,7 +76,20 @@
 				let request = new XMLHttpRequest();
 				request.open("POST", "./component/route.php");
 				request.setRequestHeader('Content-Type', "application/json; charset=utf-8");
-				request.send(JSON.stringify({ conf: {}, url: this.listUrl }));
+				request.send(JSON.stringify({ name: this.nameArch.value, url: this.listUrl }));
+				request.addEventListener("readystatechange", () => {
+					if (request.status == 200 && request.readyState == 4) {
+						document.querySelector('.url__download').addEventListener("click", () => {
+							let a = document.createElement('a');
+							a.href = JSON.parse(request.responseText).url;
+							a.download = true;
+							a.target = "_blank";
+							document.body.appendChild(a);
+							a.click();
+						});
+					}
+				});
+
 			},
 			download: function () {
 				let request = new XMLHttpRequest();
