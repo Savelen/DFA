@@ -6,7 +6,6 @@ use Exception;
 
 interface downloadFile
 {
-	public function __construct(array $urlArr, $conf);
 	public function downloadFile();
 }
 
@@ -19,7 +18,7 @@ class Files implements downloadFile
 	private $reject = [];
 	private $maxMemory = 104857600; // максимальный общий размер файлов
 	private $sizef = 0;
-	public function __construct($urlArr, $conf = ["memory" => 104857600, "root" => "../TempFiles/"])
+	public function __construct($urlArr, $conf = ["memory" => null, "root" => "../TempFiles/"])
 	{
 		foreach ($urlArr as $url) {
 			if ($this->validate($url)) array_push($this->listUrl, $url);
@@ -46,18 +45,18 @@ class Files implements downloadFile
 				if (in_array($url, $this->files) || in_array($url, $this->reject)) continue;
 				$data = $this->dataFile($url);
 				try {
-					if ($data["status"] == 200 || ($data["status"] >=300 && $data["status"] <= 308) ) {
+					if ($data["status"] == 200 || ($data["status"] >= 300 && $data["status"] <= 308)) {
 						curl_setopt($curl, CURLOPT_URL, $url); // следующий файл
 						// проверка вмещается ли файл в лимит памяти
 						$this->sizef += $data['size'];
 						if ($this->sizef <= $this->maxMemory) {
-							$file = curl_exec($curl);
+							if (!$file = curl_exec($curl)) throw new Exception("Error while get file",21);
 							// сохраняем файл
-							if (file_put_contents($this->root . $this->nameDir . "/" . $data["name"], $file) === false) throw new Exception("Сбой записи на диск", 202);
+							if (file_put_contents($this->root . $this->nameDir . "/" . $data["name"], $file) === false) throw new Exception("Сбой записи на диск", 22);
 							// добавляем в список скаченых файлов
 							array_push($this->files, array_merge(["url" => $url], $data));
-						} else throw new Exception("Не хватает места", 301);
-					} else throw new Exception("Ошибка скачивания", 201);
+						} else throw new Exception("Не хватает места", 31);
+					} else throw new Exception("Error while get file", 21);
 				} catch (Exception $e) {
 					// добавляем в список проблеммых url
 					array_push($this->reject, array_merge(["url" => $url, "error" => ["code" => $e->getCode(), "message" => $e->getMessage()]], $data));
@@ -104,8 +103,9 @@ class Files implements downloadFile
 			// тип файла
 			if (preg_match("~(?:content-type: .*?/)(.*?)(?=\s)~i", $data, $match)) $type = $match[1];
 			// имя файла
-			if (preg_match("~(?:filename=)(.*?)(?=\s)~i", $data, $match)) $name = (string)$match[1];
+			if (preg_match("~(?:filename=)(.*?)(?=\s)~i", $data, $match)) $name = preg_replace("~[^\w\d\s\.]~", '', $match[1]);
 			else $name = explode("?", basename($url))[0];
+			// проверка, указан ли тип
 			if (!preg_match("~(?:.*?\.)(\w+)$~", $name)) $name .= "." . $type;
 			return ["name" => $name, "type" => $type, "size" => $size, "status" => $status];
 		} else return ["name" => $name, "type" => $type, "size" => $size, "status" => $status];

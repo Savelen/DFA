@@ -7,26 +7,29 @@ use ZipArchive;
 
 require_once "download_file.php";
 
-interface archiveFile extends downloadFile
+interface archiveFiles extends downloadFile
 {
 	public function archive();
 }
 
-class Archive extends Files implements archiveFile
+class Archive extends Files implements archiveFiles
 {
 	private $nameArh = ""; // имя архива
 	private $archive;
 	private $encryption;
 	private $compress;
+	protected $path; // полный путь до файла
 
 	public function __construct($urlArr, $conf = ["name" => null, "encryption" => 0, "compress" => 0])
 	{
-		if (!isset($conf["name"])) $this->nameArh = substr(md5(rand()), 0, 10);
+		// имя архива
+		if (empty($conf["name"])) $this->nameArh = substr(md5(rand()), 0, 10);
 		else	$this->nameArh = $conf["name"];
 		parent::__construct($urlArr, $conf);
 		$this->archive = new ZipArchive();
 		// создание архива
-		if ($this->archive->open($this->getArchivePath(), ZipArchive::CREATE) !== true) throw new Exception("Can't open Path");
+		$this->path =  $this->root . $this->nameDir . '/' . $this->nameArh . ".zip";
+		if ($this->archive->open($this->path, ZipArchive::CREATE) !== true) throw new Exception("Can't open Path", 13);
 		// Шифрование
 		switch ($conf["encryption"]) {
 			case 0: {
@@ -77,17 +80,16 @@ class Archive extends Files implements archiveFile
 	}
 	public function archive()
 	{
-		foreach ($this->getFilePath() as $value) {
-			$this->archive->addFile($value, basename($value));
-			$this->archive->setCompressionName($value, $this->compress);  // сжатие
-			$this->archive->setEncryptionName($value, $this->encryption); // Шифрование
+		try {
+			foreach ($this->getFilePath() as $value) {
+				$this->archive->addFile($value, basename($value));
+				$this->archive->setCompressionName($value, $this->compress);  // сжатие
+				$this->archive->setEncryptionName($value, $this->encryption); // Шифрование
+			}
+			$this->archive->close();
+			return ["result" => true];
+		} catch (Exception $e) {
+			return ["result" => false, "massage"=> $e->getMessage(),"code"=>14];
 		}
-		$this->archive->close();
-
-		return $this->getArchivePath();
-	}
-	public function getArchivePath()
-	{
-		return $this->root . $this->nameDir . '/' . $this->nameArh . ".zip";
 	}
 }

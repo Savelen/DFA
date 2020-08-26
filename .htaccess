@@ -1,3 +1,3 @@
-<Files route.php>
+<Files component/route.php>
 	XSendFile on
 </Files>

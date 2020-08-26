@@ -18,7 +18,7 @@ function responsePhp($file)
 function responseApache($file)
 {
 	if (file_exists($file)) {
-		header("X-SendFile: " . $file);
+		header("X-SendFile: " . realpath($file));
 		header('Content-Type: application/octet-stream');
 		header('Content-Disposition: attachment; filename=' . basename($file));
 		header("Content-Transfer-Encoding: binary");
@@ -29,26 +29,40 @@ function responseApache($file)
 }
 
 // Начало -------------------
-require_once "../model/archive.php";
+require_once "../model/DFA.php";
 
-use DFA\Archive as Archive;
+use DFA\DFA as DFA;
 
 try {
 	// получаем json
 	$data = json_decode(file_get_contents('php://input'), true);
+	// подключение к бд
+	$dbconf = [
+		"host" => "project.php",
+		"dbname" => "dfa",
+		"tableName" => "archive",
+		"username" => "root",
+		"passwd" => ""
+	];
+	// конфигурачия работы
+	$conf = [
+		"name" => ((isset($data["name"])) ? $data["name"] : null),
+		"memory" => ((isset($data["memory"])) ? $data["memory"] : null),
+		"root" => ((isset($data["root"])) ? $data["root"] : null),
+		"encryption" => ((isset($data["encryption"])) ? $data["encryption"] : 3),
+		"compress" => ((isset($data["compress"])) ? $data["compress"] : 4),
+		"live" => 1200
+	];
 	// проверяем наличие ссылок или запросса скачать файл (приоритет)
-	if (empty($data['url'])) throw new Exception("Not Found Link", 101);
-	else {
+	if (empty($data['url']) && (empty($data["download"]) && empty($_GET['id']))) throw new Exception("Not Found Link", 11);
+	else if (isset($data["download"]) || !empty($_GET['id'])) {
+		if (!empty($data["id"]) || !empty($_GET['id'])) responseApache(DFA::download((!empty($data["id"]) ? $data["id"] : $_GET['id']), $dbconf));
+		else throw new Exception("Empty id", 45);
+	} else {
 		// конфигурация
-		$archive = new Archive($data["url"], array(
-			"name" => ((isset($data["name"])) ? $data["name"] : null),
-			"memory" => ((isset($data["memory"])) ? $data["memory"] : null),
-			"root" => ((isset($data["root"])) ? $data["root"] : null),
-			"encryption" => ((isset($data["encryption"])) ? $data["encryption"] : 3),
-			"compress" => ((isset($data["compress"])) ? $data["compress"] : 4)
-		));
+		$archive = new DFA($data["url"], array_merge($dbconf, $conf));
 		$archive->downloadFile();
-		$response = ["url" => $archive->archive(), "reject" => $archive->reject(), "ready" => $archive->ready()];
+		$response = ["id" => $archive->prepareArchive(), "reject" => $archive->reject(), "ready" => $archive->ready()];
 		$archive->removeAllFiles();
 		echo json_encode($response);
 	}

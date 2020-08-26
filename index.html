@@ -44,6 +44,7 @@
 			nameArch: document.querySelector('.form__nameArch'),
 			textA: document.querySelector('.form__enter'),
 			textL: document.querySelector('.list'),
+			id: "",
 			addStr: function (string) {
 				let li = document.createElement('li'); // элемент
 				let inp = document.createElement('input'); // отметка для удаления
@@ -76,35 +77,33 @@
 				let request = new XMLHttpRequest();
 				request.open("POST", "./component/route.php");
 				request.setRequestHeader('Content-Type', "application/json; charset=utf-8");
-				request.send(JSON.stringify({ name: this.nameArch.value, url: this.listUrl }));
 				request.addEventListener("readystatechange", () => {
 					if (request.status == 200 && request.readyState == 4) {
-						document.querySelector('.url__download').addEventListener("click", () => {
-							let a = document.createElement('a');
-							a.href = JSON.parse(request.responseText).url;
-							a.download = true;
-							a.target = "_blank";
-							document.body.appendChild(a);
-							a.click();
-						});
+						// document.querySelector('.url__download').addEventListener("click", () => {
+						// 	let a = document.createElement('a');
+						// 	a.href = JSON.parse(request.responseText).url;
+						// 	a.download = true;
+						// 	a.target = "_blank";
+						// 	document.body.appendChild(a);
+						// 	a.click();
+						// });
+						this.id = JSON.parse(request.responseText)["id"];
+						this.download();
 					}
 				});
+				request.send(JSON.stringify({ name: this.nameArch.value, url: this.listUrl }));
 
 			},
 			download: function () {
 				let request = new XMLHttpRequest();
 				request.open("POST", "./component/route.php");
 				request.setRequestHeader('Content-Type', "application/json; charset=utf-8");
-				request.send(JSON.stringify({ download: true }));
 				request.addEventListener("readystatechange", () => {
 					if (request.status == 200 && request.readyState == 4) {
-						document.querySelector('.url__download').addEventListener("click", () => {
-							let a = document.createElement('a');
-							a.href = JSON.parse(request.responseText).url;
-							a.download = true;
-							a.click();
-						});
+						window.location.href = window.location.href + "component/route.php?id=" + this.id;
 					}
+				}); document.querySelector('.url__download').addEventListener("click", () => {
+					request.send(JSON.stringify({ download: true, id: this.id }));
 				});
 			}
 		}
