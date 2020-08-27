@@ -18,18 +18,19 @@ class Files implements downloadFile
 	private $reject = [];
 	private $maxMemory = 104857600; // максимальный общий размер файлов
 	private $sizef = 0;
+
 	public function __construct($urlArr, $conf = ["memory" => null, "root" => "../TempFiles/"])
 	{
 		foreach ($urlArr as $url) {
 			if ($this->validate($url)) array_push($this->listUrl, $url);
-			else array_push($this->reject, ["url" => $url, "error" => ["code" => 203, "message" => "The link does not meet the requirements"]]);
+			else array_push($this->reject, ["url" => $url, "error" => ["code" => 23, "message" => "The link does not meet the requirements"]]);
 		}
 		if (isset($conf["memory"])) $this->maxMemory = $conf["memory"];
 		if (isset($conf["root"])) $this->root = $conf["root"];
 		$this->nameDir = substr(md5(rand()), 0, 16);
 
 		if (!is_dir($this->root)) {
-			if (!mkdir($this->root)) throw new Exception("Root path error", 102);
+			if (!mkdir($this->root)) throw new Exception("Root path error", 12);
 		}
 		mkdir($this->root . $this->nameDir);
 	}

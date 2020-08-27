@@ -88,27 +88,33 @@ class DFA extends Archive implements dataManager
 		try {
 			$time = time();
 			// получаем данные о файлах с истёкшим сроком жизни
-			$prepare = $pdo->prepare("SELECT `path` FROM " . $conf["tableName"] . " WHERE `date` < " . $time );
+			$prepare = $pdo->prepare("SELECT `path` FROM " . $conf["tableName"] . " WHERE `date` < " . $time);
 			if (!$prepare->execute()) {
 				throw new Exception("Error while geting data", 44);
 			}
 			$arch_list = $prepare->fetchAll(PDO::FETCH_ASSOC);
-			// удаляем их
-			foreach ($arch_list as $file) {
-				// получаем путь до папки с файлом
-				$dir = dirname($file['path']); // !------------------ add function realpath();
-				if (file_exists($dir)) {
-					// удаляем папку и всё содержимое
-					DFA::removeDir($dir);
+			$result = ["size" => 0, "count" => 0];
+
+			if (count($arch_list) > 0) {
+				// удаляем их
+				foreach ($arch_list as &$file) {
+					// получаем путь до папки с файлом
+					$dir = dirname(realpath($file['path']));
+					if (file_exists($dir)) {
+						// удаляем папку и всё содержимое
+						$buf = DFA::removeDir($dir);
+						$result["size"] += $buf["size"];
+						$result["count"] += $buf["count"];
+					}
+				}
+				// удаляем из базы данных записи о файлах
+				$prepare = $pdo->prepare("DELETE FROM " . $conf["tableName"] . " WHERE `date` < " . $time);
+				if (!$prepare->execute()) {
+					throw new Exception("Error while geting data", 44);
 				}
 			}
-			// удаляем из базы данных записи о файлах
-			$prepare = $pdo->prepare("DELETE FROM " . $conf["tableName"] . " WHERE `date` < " . $time);
-			if (!$prepare->execute()) {
-				throw new Exception("Error while geting data", 44);
-			}
-			// возвращаем массив удалённых файлов
-			return $arch_list;
+			// возвращаем массив c данными об итоге работы
+			return $result;
 		} catch (PDOException $e) {
 			throw new Exception("Error while preparing request: " . $e->getMessage(), 42);
 		} catch (Exception $e) {
@@ -118,14 +124,19 @@ class DFA extends Archive implements dataManager
 	// удаляет папку с сожержимым
 	static private function removeDir($dir)
 	{
+		$size = 0;
+		$countFile = 0;
 		$includes = new FilesystemIterator($dir);
 		foreach ($includes as $include) {
 			if (is_dir($include) && !is_link($include)) {
 				self::removeDir($include);
 			} else {
+				$countFile++;
+				$size += ($b = filesize($include)) ? $b : 0;
 				unlink($include);
 			}
 		}
 		rmdir($dir);
+		return ["size" => $size, "count" => $countFile];
 	}
 }
