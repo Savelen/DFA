@@ -14,7 +14,7 @@ interface dataManager extends archiveFiles
 	public function prepareArchive();
 	static public function dbconnect($host, $dbname, $username, $passwd);
 	static public function download(string $id, array $conf = []);
-	static public function remove(array $conf = [], $removeAll = false);
+	static public function remove(array $conf = []);
 }
 
 class DFA extends Archive implements dataManager
@@ -82,7 +82,7 @@ class DFA extends Archive implements dataManager
 			throw new Exception($e->getMessage(), $e->getCode());
 		}
 	}
-	static public function remove($conf = ["host" => 'localhost', "dbname" => "dfa", "tableName" => "archihve", "username" => "", "passwd" => ""], $removeAll = false)
+	static public function remove($conf = ["host" => 'localhost', "dbname" => "dfa", "tableName" => "archihve", "username" => "", "passwd" => ""])
 	{
 		$pdo = self::dbconnect($conf['host'], $conf["dbname"], $conf["username"], $conf["passwd"]);
 		try {
@@ -93,7 +93,7 @@ class DFA extends Archive implements dataManager
 				throw new Exception("Error while geting data", 44);
 			}
 			$arch_list = $prepare->fetchAll(PDO::FETCH_ASSOC);
-			$result = ["size" => 0, "count" => 0];
+			$result = ["size" => 0, "count" => 0, "error" => []];
 
 			if (count($arch_list) > 0) {
 				// удаляем их
@@ -105,6 +105,7 @@ class DFA extends Archive implements dataManager
 						$buf = DFA::removeDir($dir);
 						$result["size"] += $buf["size"];
 						$result["count"] += $buf["count"];
+						if (!empty($buf["error"])) array_push($result["error"], $buf["error"]);
 					}
 				}
 				// удаляем из базы данных записи о файлах
@@ -124,19 +125,32 @@ class DFA extends Archive implements dataManager
 	// удаляет папку с сожержимым
 	static private function removeDir($dir)
 	{
-		$size = 0;
-		$countFile = 0;
-		$includes = new FilesystemIterator($dir);
-		foreach ($includes as $include) {
-			if (is_dir($include) && !is_link($include)) {
-				self::removeDir($include);
-			} else {
-				$countFile++;
-				$size += ($b = filesize($include)) ? $b : 0;
-				unlink($include);
+		try {
+			$result = ["size" => 0, "count" => 0];
+			$reject = []; // для проблемный файлов
+			$includes = new FilesystemIterator($dir);
+			foreach ($includes as $include) {
+				if (is_dir($include) && !is_link($include)) {
+					// рекурсия и запись результатов
+					$buf = self::removeDir($include);
+					$result["count"] += $buf["count"];
+					$result["size"] += $buf["size"];
+					$reject = array_merge($reject, $buf["error"]["file"]);
+				} else {
+					$size = filesize($include);
+					// удаляем файл
+					if (!unlink($include)) array_push($reject, basename($include));
+					else {
+						$result["count"]++;
+						$result["size"] += $size;
+					}
+				}
 			}
+			// удаляем директорию
+			if (!rmdir($dir)) throw new Exception("Cannot be removed directory", 51);
+			return $result;
+		} catch (Exception $e) {
+			return array_merge($result, ["error" => ["message" => $e->getMessage(), "code" => $e->getCode(), "path" => $dir, "file" => $reject]]);
 		}
-		rmdir($dir);
-		return ["size" => $size, "count" => $countFile];
 	}
 }

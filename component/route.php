@@ -29,6 +29,7 @@ function responseApache($file)
 }
 
 // Начало -------------------
+require_once "../model/config.php"; // Здесь $dbconf и $conf
 require_once "../model/DFA.php";
 
 use DFA\DFA as DFA;
@@ -36,33 +37,25 @@ use DFA\DFA as DFA;
 try {
 	// получаем json
 	$data = json_decode(file_get_contents('php://input'), true);
-	// подключение к бд
-	$dbconf = [
-		"host" => "project.php",
-		"dbname" => "dfa",
-		"tableName" => "archive",
-		"username" => "root",
-		"passwd" => ""
-	];
-	// конфигурачия работы
-	$conf = [
+
+	// данные из config.php
+	$conf = array_merge($conf, [
 		"name" => ((isset($data["name"])) ? $data["name"] : null),
-		"memory" => ((isset($data["memory"])) ? $data["memory"] : null),
-		"root" => ((isset($data["root"])) ? $data["root"] : null),
 		"encryption" => ((isset($data["encryption"])) ? $data["encryption"] : 3),
-		"compress" => ((isset($data["compress"])) ? $data["compress"] : 4),
-		"live" => 1200
-	];
+		"compress" => ((isset($data["compress"])) ? $data["compress"] : 4)
+	]);
+
 	// проверяем наличие ссылок или запросса скачать файл (приоритет)
-	if (empty($data['url']) && (empty($data["download"]) && empty($_GET['id']))) throw new Exception("Not Found Link", 11);
-	else if (isset($data["download"]) || !empty($_GET['id'])) {
-		if (!empty($data["id"]) || !empty($_GET['id'])) responseApache(DFA::download((!empty($data["id"]) ? $data["id"] : $_GET['id']), $dbconf));
-		else throw new Exception("Empty id", 45);
-	} else {
-		// конфигурация
+	if (empty($data['url']) && empty($_GET['id'])) throw new Exception("Not Found Link or id", 11);
+	// отдача на скачивание
+	else if (!empty($_GET['id']))  responseApache(DFA::download($_GET['id'], $dbconf));
+	// архивирование и отдача id архива с данными о результате скачивания
+	else if (!empty($data['url'])) {
 		$archive = new DFA($data["url"], array_merge($dbconf, $conf));
 		$archive->downloadFile();
+		// архивируем и готовим ответ
 		$response = ["id" => $archive->prepareArchive(), "reject" => $archive->reject(), "ready" => $archive->ready()];
+		// удаляем скаченные файлы
 		$archive->removeAllFiles();
 		echo json_encode($response);
 	}
