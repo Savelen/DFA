@@ -2,7 +2,7 @@
 // устанавливаем полный путь до директории
 chdir(__DIR__);
 
-require_once "config.php";
+require_once "../controller/config.php";
 require_once "DFA.php";
 
 use DFA\DFA as DFA;

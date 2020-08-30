@@ -14,7 +14,7 @@ interface archiveFiles extends downloadFile
 
 class Archive extends Files implements archiveFiles
 {
-	private $nameArh = ""; // имя архива
+	private $nameArch = ""; // имя архива
 	private $archive;
 	private $encryption;
 	private $compress;
@@ -23,12 +23,17 @@ class Archive extends Files implements archiveFiles
 	public function __construct($urlArr, $conf = ["name" => null, "encryption" => 0, "compress" => 0])
 	{
 		// имя архива
-		if (empty($conf["name"])) $this->nameArh = substr(md5(rand()), 0, 10);
-		else	$this->nameArh = $conf["name"];
+		if (empty($conf["name"])) $this->nameArch = substr(md5(rand()), 0, 10);
+		else {
+			// первый символ должен быть словообразующий
+			preg_match('/\w/', $conf["name"][0], $chr);
+			// добавляем символ "_" если первый символ не словообразующий
+			$this->nameArch = (empty($chr) ? "_" : "") . preg_replace("~[\s!@#$%^&*()[\]{}`\~+№;:?|/\\\]~", "_", $conf["name"]) . ".zip";
+		}
 		parent::__construct($urlArr, $conf);
 		$this->archive = new ZipArchive();
 		// создание архива
-		$this->path =  $this->root . $this->nameDir . '/' . $this->nameArh . ".zip";
+		$this->path =  $this->root . $this->nameDir . '/' . $this->nameArch;
 		if ($this->archive->open($this->path, ZipArchive::CREATE) !== true) throw new Exception("Can't open Path", 13);
 		// Шифрование
 		switch ($conf["encryption"]) {
@@ -89,7 +94,7 @@ class Archive extends Files implements archiveFiles
 			$this->archive->close();
 			return ["result" => true];
 		} catch (Exception $e) {
-			return ["result" => false, "massage"=> $e->getMessage(),"code"=>14];
+			return ["result" => false, "massage" => $e->getMessage(), "code" => 14];
 		}
 	}
 }

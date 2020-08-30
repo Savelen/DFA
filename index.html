@@ -75,7 +75,7 @@
 			},
 			send: function () {
 				let request = new XMLHttpRequest();
-				request.open("POST", "./component/route.php");
+				request.open("POST", "./controller/route.php");
 				request.setRequestHeader('Content-Type', "application/json; charset=utf-8");
 				request.addEventListener("readystatechange", () => {
 					if (request.status == 200 && request.readyState == 4) {
@@ -87,7 +87,7 @@
 			},
 			download: function () {
 				document.querySelector('.url__download').addEventListener("click", () => {
-					window.location.href = window.location.href + "component/route.php?id=" + this.id;
+					window.location.href = window.location.href + "controller/route.php?id=" + this.id;
 				});
 			}
 		}

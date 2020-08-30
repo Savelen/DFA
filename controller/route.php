@@ -29,7 +29,7 @@ function responseApache($file)
 }
 
 // Начало -------------------
-require_once "../model/config.php"; // Здесь $dbconf и $conf
+require_once "config.php"; // Здесь $dbconf и $conf
 require_once "../model/DFA.php";
 
 use DFA\DFA as DFA;
