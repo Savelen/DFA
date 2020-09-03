@@ -1,5 +1,5 @@
 <?php
-// устанавливаем полный путь до директории
+// Set full path to the directory
 chdir(__DIR__);
 
 require_once "../controller/config.php";
@@ -7,30 +7,30 @@ require_once "DFA.php";
 
 use DFA\DFA as DFA;
 
-// путь до папки и файла-лога
+// Path to direcrory and file-log
 $pathLog = ".." . DIRECTORY_SEPARATOR . "Log";
 $logName = $pathLog . DIRECTORY_SEPARATOR . date("Y-m-d") . ".txt";
 
-// создаём папку если её нет
+// If the directory doesn't exist, create it
 if (!is_dir($pathLog)) {
 	if (mkdir($pathLog)) infoLog(DFA::remove($dbconf), $logName);
 } else infoLog(DFA::remove($dbconf), $logName);
 
-// логируем
+// logging
 function infoLog($data, $path)
 {
 	if (!is_file($path)) {
 		$file = fopen($path, 'w');
 		fclose($file);
 	}
-	// результат очистки
+	// Cleaning result
 	$info = "Time: [" . date("H:i") . "]" . " | Removed [" . $data["count"] . "] | Size: " . $data['size'] . " Byte" . PHP_EOL;
-	// запись об ошибке
+	// Error record
 	if (!empty($data["error"])) {
-		// в каких папках была ошибка
+		// Location a mistake
 		foreach ($data["error"] as $err) {
 			$info .= PHP_EOL . " Error " . $err['code'] . " - " . $err['message'] . PHP_EOL . " Path: " . $err["path"] . PHP_EOL . " Files: [ ";
-			// какие файлы вызвали ошибку
+			// What file caused the error
 			foreach ($err["file"] as $file) $info .= basename($file) . " ";
 			$info .=  "]" . PHP_EOL . PHP_EOL;
 		}

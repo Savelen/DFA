@@ -1,5 +1,5 @@
 <?php
-// подключение к бд
+// DB connect
 $dbconf = [
 	"host" => "project.php",
 	"dbname" => "dfa",
@@ -7,9 +7,17 @@ $dbconf = [
 	"username" => "root",
 	"passwd" => ""
 ];
-// конфигурачия работы
+// Work configuration
 $conf = [
 	"memory" => (null),
 	"root" => (null),
+	"encryption" => (3),
+	"compress" => (4),
 	"live" => 1200
 ];
+
+/**
+ *  0 - APACHE
+ *  1 - PHP
+ */
+define("DOWNLOAD_METHOD",0);

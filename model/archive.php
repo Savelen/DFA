@@ -14,28 +14,28 @@ interface archiveFiles extends downloadFile
 
 class Archive extends Files implements archiveFiles
 {
-	private $nameArch = ""; // имя архива
+	private $nameArch = ""; // Archive name
 	private $archive;
 	private $encryption;
 	private $compress;
-	protected $path; // полный путь до файла
+	protected $path; // Full path to the archive
 
 	public function __construct($urlArr, $conf = ["name" => null, "encryption" => 0, "compress" => 0])
 	{
-		// имя архива
-		if (empty($conf["name"])) $this->nameArch = substr(md5(rand()), 0, 10);
+		// Archive name
+		if (empty($conf["name"])) $this->nameArch = substr(md5(rand()), 0, 10) . ".zip";
 		else {
-			// первый символ должен быть словообразующий
+			// first symbol sould match  regexp /\w/
 			preg_match('/\w/', $conf["name"][0], $chr);
-			// добавляем символ "_" если первый символ не словообразующий
+			// If first character doesn't match  regexp "\w" then add  "_" to the beginning
 			$this->nameArch = (empty($chr) ? "_" : "") . preg_replace("~[\s!@#$%^&*()[\]{}`\~+№;:?|/\\\]~", "_", $conf["name"]) . ".zip";
 		}
 		parent::__construct($urlArr, $conf);
 		$this->archive = new ZipArchive();
-		// создание архива
-		$this->path =  $this->root . $this->nameDir . '/' . $this->nameArch;
+		// Archive creation
+		$this->path =  $this->root . $this->dirName . '/' . $this->nameArch;
 		if ($this->archive->open($this->path, ZipArchive::CREATE) !== true) throw new Exception("Can't open Path", 13);
-		// Шифрование
+		// encrypt
 		switch ($conf["encryption"]) {
 			case 0: {
 					$this->encryption = ZipArchive::EM_NONE;
@@ -56,7 +56,7 @@ class Archive extends Files implements archiveFiles
 			default:
 				break;
 		}
-		// сжатие
+		// compress
 		switch ($conf['compress']) {
 			case 0: {
 					$this->compress = ZipArchive::CM_STORE;
@@ -88,8 +88,8 @@ class Archive extends Files implements archiveFiles
 		try {
 			foreach ($this->getFilePath() as $value) {
 				$this->archive->addFile($value, basename($value));
-				$this->archive->setCompressionName($value, $this->compress);  // сжатие
-				$this->archive->setEncryptionName($value, $this->encryption); // Шифрование
+				$this->archive->setCompressionName($value, $this->compress);  // compress
+				$this->archive->setEncryptionName($value, $this->encryption); // encryption
 			}
 			$this->archive->close();
 			return ["result" => true];

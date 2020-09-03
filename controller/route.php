@@ -1,5 +1,9 @@
 <?php
 
+/**
+ * answer by PHP (readfile)
+ * $file - path to file
+ */
 function responsePhp($file)
 {
 	if (ob_get_level()) {
@@ -15,6 +19,10 @@ function responsePhp($file)
 	header('Content-Length: ' . filesize($file));
 	exit(readfile($file));
 }
+/**
+ * Answer by X-SendFile (Apache)
+ * $file - path to file
+ */
 function responseApache($file)
 {
 	if (file_exists($file)) {
@@ -29,33 +37,40 @@ function responseApache($file)
 }
 
 // Начало -------------------
-require_once "config.php"; // Здесь $dbconf и $conf
+require_once "config.php"; // Here $dbconf and $conf
 require_once "../model/DFA.php";
 
 use DFA\DFA as DFA;
 
 try {
-	// получаем json
+	// Get json
 	$data = json_decode(file_get_contents('php://input'), true);
 
-	// данные из config.php
-	$conf = array_merge($conf, [
-		"name" => ((isset($data["name"])) ? $data["name"] : null),
-		"encryption" => ((isset($data["encryption"])) ? $data["encryption"] : 3),
-		"compress" => ((isset($data["compress"])) ? $data["compress"] : 4)
-	]);
+	// Data from config.php + user data
+	$conf = array_merge($conf, ["name" => ((isset($data["name"])) ? $data["name"] : null)]);
 
-	// проверяем наличие ссылок или запросса скачать файл (приоритет)
+	// check existense of url or request for download file (priority)
 	if (empty($data['url']) && empty($_GET['id'])) throw new Exception("Not Found Link or id", 11);
-	// отдача на скачивание
-	else if (!empty($_GET['id']))  responseApache(DFA::download($_GET['id'], $dbconf));
-	// архивирование и отдача id архива с данными о результате скачивания
+	// Sending file
+	else if (!empty($_GET['id'])) {
+		switch (DOWNLOAD_METHOD) {
+			case 0:
+				responseApache(DFA::download($_GET['id'], $dbconf));
+				break;
+			case 1:
+				responsePHP(DFA::download($_GET['id'], $dbconf));
+				break;
+			default:
+				break;
+		}
+	}
+	// Archiveing and return data with the result of download and archive id
 	else if (!empty($data['url'])) {
 		$archive = new DFA($data["url"], array_merge($dbconf, $conf));
 		$archive->downloadFile();
-		// архивируем и готовим ответ
+		// Archiveing and prepare answer
 		$response = ["id" => $archive->prepareArchive(), "reject" => $archive->reject(), "ready" => $archive->ready()];
-		// удаляем скаченные файлы
+		// Remove downloaded files
 		$archive->removeAllFiles();
 		echo json_encode($response);
 	}

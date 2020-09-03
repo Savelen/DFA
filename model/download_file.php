@@ -13,26 +13,26 @@ class Files implements downloadFile
 {
 	protected $listUrl = [];
 	protected $files = [];
-	protected $nameDir = "";  // имя папки в которой хранятся файлы
-	protected $root = "../TempFiles/"; // корневая папка хранения временных файлов пользователей
+	protected $dirName = "";  // Dir name which storage files
+	protected $root = "../TempFiles/"; // Root dir for storage dir with files
 	private $reject = [];
-	private $maxMemory = 104857600; // максимальный общий размер файлов
+	private $maxMemory = 104857600; // Max size for storage files
 	private $sizef = 0;
 
 	public function __construct($urlArr, $conf = ["memory" => null, "root" => "../TempFiles/"])
 	{
 		foreach ($urlArr as $url) {
 			if ($this->validate($url)) array_push($this->listUrl, $url);
-			else array_push($this->reject, ["url" => $url, "error" => ["code" => 23, "message" => "The link does not meet the requirements"]]);
+			else array_push($this->reject, ["url" => $url, "error" => ["code" => 23, "message" => "The link doesn't meet the requirements"]]);
 		}
 		if (isset($conf["memory"])) $this->maxMemory = $conf["memory"];
 		if (isset($conf["root"])) $this->root = $conf["root"];
-		$this->nameDir = substr(md5(rand()), 0, 16);
+		$this->dirName = substr(md5(rand()), 0, 16);
 
 		if (!is_dir($this->root)) {
 			if (!mkdir($this->root)) throw new Exception("Root path error", 12);
 		}
-		mkdir($this->root . $this->nameDir);
+		mkdir($this->root . $this->dirName);
 	}
 
 	public function downloadFile()
@@ -47,19 +47,19 @@ class Files implements downloadFile
 				$data = $this->dataFile($url);
 				try {
 					if ($data["status"] == 200 || ($data["status"] >= 300 && $data["status"] <= 308)) {
-						curl_setopt($curl, CURLOPT_URL, $url); // следующий файл
-						// проверка вмещается ли файл в лимит памяти
+						curl_setopt($curl, CURLOPT_URL, $url); // Next file
+						// Checking the file fits into the memory limit
 						$this->sizef += $data['size'];
 						if ($this->sizef <= $this->maxMemory) {
 							if (!$file = curl_exec($curl)) throw new Exception("Error while get file",21);
-							// сохраняем файл
-							if (file_put_contents($this->root . $this->nameDir . "/" . $data["name"], $file) === false) throw new Exception("Сбой записи на диск", 22);
-							// добавляем в список скаченых файлов
+							// Save file
+							if (file_put_contents($this->root . $this->dirName . "/" . $data["name"], $file) === false) throw new Exception("Failure to writing of file", 22);
+							// Add file to the list downloaded
 							array_push($this->files, array_merge(["url" => $url], $data));
-						} else throw new Exception("Не хватает места", 31);
+						} else throw new Exception("Out of memory.", 31);
 					} else throw new Exception("Error while get file", 21);
 				} catch (Exception $e) {
-					// добавляем в список проблеммых url
+					// Add to the list of problem urls
 					array_push($this->reject, array_merge(["url" => $url, "error" => ["code" => $e->getCode(), "message" => $e->getMessage()]], $data));
 				}
 			}
@@ -71,7 +71,7 @@ class Files implements downloadFile
 	{
 		$result = [];
 		foreach ($this->files as $value) {
-			array_push($result, $this->root . $this->nameDir . "/" . $value['name']);
+			array_push($result, $this->root . $this->dirName . "/" . $value['name']);
 		}
 		return $result;
 	}
@@ -87,7 +87,7 @@ class Files implements downloadFile
 		$size = false;
 		$name = false;
 		$type = false;
-		// получаем заголовки и вычленяем статус ответа и размер файла
+		// Geting headers and parse stasus of response and file size
 		if ($curl = curl_init($url)) {
 			curl_setopt($curl, CURLOPT_NOBODY, true);
 			curl_setopt($curl, CURLOPT_HEADER, true);
@@ -97,37 +97,32 @@ class Files implements downloadFile
 			$data = curl_exec($curl);
 			curl_close($curl);
 
-			// статус
+			// Status
 			if (preg_match("~(?:HTTP\/.+?)(\d{3})~i", $data, $match)) $status = (int)$match[1];
-			// размер файла
+			// Size file
 			if (preg_match("~(?:content-length:\s)(\d+)~i", $data, $match)) $size = (int)$match[1];
-			// тип файла
+			// Type of file
 			if (preg_match("~(?:content-type: .*?/)(.*?)(?=\s)~i", $data, $match)) $type = $match[1];
-			// имя файла
+			// File name
 			if (preg_match("~(?:filename=)(.*?)(?=\s)~i", $data, $match)) $name = preg_replace("~[^\w\d\s\.]~", '', $match[1]);
 			else $name = explode("?", basename($url))[0];
-			// проверка, указан ли тип
+			// Check if the type is specified
 			if (!preg_match("~(?:.*?\.)(\w+)$~", $name)) $name .= "." . $type;
 			return ["name" => $name, "type" => $type, "size" => $size, "status" => $status];
 		} else return ["name" => $name, "type" => $type, "size" => $size, "status" => $status];
 	}
-	// проверка на url
+	// Check string for URL match
 	private function validate($url)
 	{
 		return boolval(preg_match("~https?:(//|\{2}).*~", $url));
 	}
 
-	// показать список
-	public function listUrl()
-	{
-		return $this->listUrl;
-	}
-	// показывает откланённые строки
+	// Return rejected strings
 	public function reject()
 	{
 		return $this->reject;
 	}
-	// показывает использованные url
+	// Return processed of urls
 	public function ready()
 	{
 		return $this->files;

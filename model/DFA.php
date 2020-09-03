@@ -33,10 +33,10 @@ class DFA extends Archive implements dataManager
 	}
 	public function prepareArchive()
 	{
-		// акхивируем файлы
+		// Arciving file
 		$result = $this->archive();
 		if ($result["result"] === true) {
-			// добавляем запись в бд. (id_archive,date,path)
+			// Add DB record (id_archive,date,path)
 			$id_archive = substr(md5(rand()), 0, 16);
 			try {
 				$prepare = $this->pdo->prepare("INSERT INTO " . $this->tableName . " (`id_archive`,`date`,`path`) VALUES (:id_archive,:date,:path)");
@@ -54,7 +54,7 @@ class DFA extends Archive implements dataManager
 	static public function dbconnect($host, $dbname, $username, $passwd)
 	{
 		try {
-			// подключение к бд
+			// DB connection
 			$pdo  = new PDO(
 				"mysql:host=" . $host . ";dbname=" . $dbname,
 				$username,
@@ -69,12 +69,12 @@ class DFA extends Archive implements dataManager
 	{
 		$pdo = self::dbconnect($conf['host'], $conf["dbname"], $conf["username"], $conf["passwd"]);
 		try {
-			// запрос к бд. Ищем по id путь к архиву
+			// Query to DB. Find the path of archive by id
 			$prepare = $pdo->prepare("SELECT `path` FROM " . $conf["tableName"] . " WHERE id_archive = :id_archive");
 			if (!$prepare->execute(["id_archive" => $id])) {
 				throw new Exception("Error while geting data", 404);
 			}
-			// возвращаем путь
+			// Return path
 			return $prepare->fetch(PDO::FETCH_ASSOC)["path"];
 		} catch (PDOException $e) {
 			throw new Exception("Error while preparing request: " . $e->getMessage(), 402);
@@ -87,7 +87,7 @@ class DFA extends Archive implements dataManager
 		$pdo = self::dbconnect($conf['host'], $conf["dbname"], $conf["username"], $conf["passwd"]);
 		try {
 			$time = time();
-			// получаем данные о файлах с истёкшим сроком жизни
+			// Get data about expired files
 			$prepare = $pdo->prepare("SELECT `path` FROM " . $conf["tableName"] . " WHERE `date` < " . $time);
 			if (!$prepare->execute()) {
 				throw new Exception("Error while geting data", 44);
@@ -96,25 +96,25 @@ class DFA extends Archive implements dataManager
 			$result = ["size" => 0, "count" => 0, "error" => []];
 
 			if (count($arch_list) > 0) {
-				// удаляем их
+				// Remove them
 				foreach ($arch_list as &$file) {
-					// получаем путь до папки с файлом
+					// Get the path to directory with the file
 					$dir = dirname(realpath($file['path']));
 					if (file_exists($dir)) {
-						// удаляем папку и всё содержимое
+						// Delete the directory and everything it contains
 						$buf = DFA::removeDir($dir);
 						$result["size"] += $buf["size"];
 						$result["count"] += $buf["count"];
 						if (!empty($buf["error"])) array_push($result["error"], $buf["error"]);
 					}
 				}
-				// удаляем из базы данных записи о файлах
+				// Delete a records about files from the DB
 				$prepare = $pdo->prepare("DELETE FROM " . $conf["tableName"] . " WHERE `date` < " . $time);
 				if (!$prepare->execute()) {
 					throw new Exception("Error while geting data", 44);
 				}
 			}
-			// возвращаем массив c данными об итоге работы
+			// Return an array of data about work results
 			return $result;
 		} catch (PDOException $e) {
 			throw new Exception("Error while preparing request: " . $e->getMessage(), 42);
@@ -122,23 +122,23 @@ class DFA extends Archive implements dataManager
 			throw new Exception($e->getMessage(), $e->getCode());
 		}
 	}
-	// удаляет папку с сожержимым
+	// Delete a directory with content
 	static private function removeDir($dir)
 	{
 		try {
 			$result = ["size" => 0, "count" => 0];
-			$reject = []; // для проблемный файлов
+			$reject = []; // For problem files
 			$includes = new FilesystemIterator($dir);
 			foreach ($includes as $include) {
 				if (is_dir($include) && !is_link($include)) {
-					// рекурсия и запись результатов
+					// Recursion and writing the result
 					$buf = self::removeDir($include);
 					$result["count"] += $buf["count"];
 					$result["size"] += $buf["size"];
 					$reject = array_merge($reject, $buf["error"]["file"]);
 				} else {
 					$size = filesize($include);
-					// удаляем файл
+					// Delete file
 					if (!unlink($include)) array_push($reject, basename($include));
 					else {
 						$result["count"]++;
@@ -146,7 +146,7 @@ class DFA extends Archive implements dataManager
 					}
 				}
 			}
-			// удаляем директорию
+			// Delete directory
 			if (!rmdir($dir)) throw new Exception("Cannot be removed directory", 51);
 			return $result;
 		} catch (Exception $e) {
