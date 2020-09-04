@@ -8,7 +8,7 @@ require_once "DFA.php";
 use DFA\DFA as DFA;
 
 // Path to direcrory and file-log
-$pathLog = ".." . DIRECTORY_SEPARATOR . "Log";
+$pathLog = $conf["log"];
 $logName = $pathLog . DIRECTORY_SEPARATOR . date("Y-m-d") . ".txt";
 
 // If the directory doesn't exist, create it

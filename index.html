@@ -51,20 +51,18 @@
 				let p = document.createElement('p');
 				// chechbox
 				inp.type = "checkbox";
-				inp.dataset.num = this.listUrl.length; // номер элемента
 				li.appendChild(inp); // добавляем checkbox
 				// добавляем инфу о url
 				p.textContent = " " + string;
 				li.appendChild(p);
 				// добавляем элемент в список
-				li.className = "list-el-" + this.listUrl.length;
+				li.className = "list-el";
 				this.listUrl.push(string); // добавляем в список url-ов
 				this.textL.appendChild(li); // показываем введённый url
-				this.textA.value = "";
 			},
-			remUrl: function (num) {
-				this.textL.removeChild(document.querySelector(".list-el-" + num));
-				this.listUrl.splice(num, 1);
+			remUrl: function (el) {
+				this.listUrl.splice(this.listUrl.indexOf(el.querySelector("p").textContent.trim()), 1);
+				this.textL.removeChild(el);
 			},
 			addUrl: function (str) {
 				str = str.replace(/\s/g, "",);
@@ -72,6 +70,7 @@
 				arrUrl.forEach(element => {
 					if (this.listUrl.indexOf(element) == -1 && /[^/\/:]+:(\/\/|\\\\).+?/.test(element)) this.addStr(element);
 				});
+				this.textA.value = "";
 			},
 			send: function () {
 				let request = new XMLHttpRequest();
@@ -109,7 +108,7 @@
 		manage.butDel.addEventListener('click', () => {
 			manage.textL.querySelectorAll("input").forEach((el) => {
 				if (el.checked) {
-					manage.remUrl(el.dataset.num);
+					manage.remUrl(el.parentElement);
 				}
 			});
 		});
